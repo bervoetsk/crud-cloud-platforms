@@ -61,7 +61,7 @@ resource nsgFlask 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
           priority: 100
           action: 'Allow'
         }
-      },
+      }
       // Deny all other inbound traffic
       {
         name: 'DenyAllInbound'
@@ -262,24 +262,25 @@ resource appGateway 'Microsoft.Network/applicationGateways@2023-09-01' = {
 
 // Diagnostic settings for sending logs to Azure Monitor
 resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2020-10-01' = {
-  name: 'flask-app-diagnostics'
-  scope: containerGroup
-  properties: {
-    workspaceId: '/subscriptions/${subscription().id}/resourceGroups/${resourceGroup().name}/providers/Microsoft.OperationalInsights/workspaces/yourLogAnalyticsWorkspace'
-    logs: [
-      {
-        category: 'ContainerInstanceConsole'
-        enabled: true
-      }
-    ]
-    metrics: [
-      {
-        category: 'AllMetrics'
-        enabled: true
-      }
-    ]
+    name: 'flask-app-diagnostics'
+    scope: containerGroup
+    properties: {
+      workspaceId: resourceId('Microsoft.OperationalInsights/workspaces', 'yourLogAnalyticsWorkspace') // Correct way to reference the resource ID
+      logs: [
+        {
+          category: 'ContainerInstanceConsole'
+          enabled: true
+        }
+      ]
+      metrics: [
+        {
+          category: 'AllMetrics'
+          enabled: true
+        }
+      ]
+    }
   }
-}
+  
 
 // Output the URL to access the Flask app
 output flaskAppUrl string = 'http://${publicIP.properties.dnsSettings.fqdn}'

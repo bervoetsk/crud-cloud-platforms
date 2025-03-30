@@ -53,9 +53,12 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
         }
       ]
     }
-    // Correcting the reference to subnet id, ensuring the correct type
+    // Fix the subnetIds format to match ContainerGroupSubnetId type
     subnetIds: [
-      subnet.id // Reference the correct subnet ID
+      {
+        id: subnet.id
+        name: 'default'
+      }
     ]
     imageRegistryCredentials: [
       {
@@ -66,3 +69,6 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
     ]
   }
 }
+
+// Define parameters
+param location string = resourceGroup().location

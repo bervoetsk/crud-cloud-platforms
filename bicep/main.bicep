@@ -28,9 +28,7 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
         name: 'subnet-appgw'
         properties: {
           addressPrefix: '10.0.2.0/24'
-          networkSecurityGroup: {
-            id: appGwNsg.id
-          }
+          // Removed the NSG association with AppGw subnet as it's causing issues
         }
       }
     ]
@@ -75,57 +73,7 @@ resource flaskNsg 'Microsoft.Network/networkSecurityGroups@2023-09-01' = {
   }
 }
 
-// Network Security Group for AppGw subnet
-resource appGwNsg 'Microsoft.Network/networkSecurityGroups@2023-09-01' = {
-  name: 'nsg-appgw-subnet'
-  location: resourceGroup().location
-  properties: {
-    securityRules: [
-      {
-        name: 'AllowHttpInbound'
-        properties: {
-          priority: 100
-          direction: 'Inbound'
-          access: 'Allow'
-          protocol: 'Tcp'
-          sourceAddressPrefix: 'Internet'
-          sourcePortRange: '*'
-          destinationAddressPrefix: '*'
-          destinationPortRange: '80'
-          description: 'Allow HTTP inbound traffic'
-        }
-      }
-      {
-        name: 'AllowGatewayManagerInbound'
-        properties: {
-          priority: 110
-          direction: 'Inbound'
-          access: 'Allow'
-          protocol: 'Tcp'
-          sourceAddressPrefix: 'GatewayManager'
-          sourcePortRange: '*'
-          destinationAddressPrefix: '*'
-          destinationPortRange: '65200-65535'
-          description: 'Allow Gateway Manager inbound traffic'
-        }
-      }
-      {
-        name: 'DenyAllInbound'
-        properties: {
-          priority: 4096
-          direction: 'Inbound'
-          access: 'Deny'
-          protocol: '*'
-          sourceAddressPrefix: '*'
-          sourcePortRange: '*'
-          destinationAddressPrefix: '*'
-          destinationPortRange: '*'
-          description: 'Deny all other inbound traffic'
-        }
-      }
-    ]
-  }
-}
+// Network Security Group for AppGw subnet - Removed from subnet association
 
 // Reference to the subnets
 resource subnetFlask 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' existing = {
@@ -319,9 +267,7 @@ resource appGateway 'Microsoft.Network/applicationGateways@2023-09-01' = {
       }
     ]
   }
-  dependsOn: [
-    containerGroup
-  ]
+  // Removed unnecessary dependsOn
 }
 
 // Diagnostic settings for Application Gateway

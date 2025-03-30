@@ -87,7 +87,7 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
         {
           server: 'acrs6amnrp4ma7qw.azurecr.io'
           username: 'acrs6amnrp4ma7qw'
-          password: 'cWCgp9/jkpJU2pJBky0ZXghkASeU3p7Ra06XgOYhfj+ACRCMuST9'
+          password: 'o8Uy2reAxr+gJ7dDP1NvNxRZDQykyTXarMHEdGdLLy+ACRCm4+wG'
         }
       ]
     }

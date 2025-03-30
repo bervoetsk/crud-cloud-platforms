@@ -1,5 +1,3 @@
-// Remove the unused location parameter since we're using resourceGroup().location directly
-
 // Define Virtual Network
 resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
   name: 'vnet-flask'
@@ -17,6 +15,14 @@ resource subnet 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' = {
   parent: vnet
   properties: {
     addressPrefix: '10.0.1.0/24'
+    delegations: [
+      {
+        name: 'delegation'
+        properties: {
+          serviceName: 'Microsoft.ContainerInstance/containerGroups'
+        }
+      }
+    ]
   }
 }
 
@@ -47,7 +53,7 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
     ]
     osType: 'Linux'
     ipAddress: {
-      type: 'Public'
+      type: 'Private'
       ports: [
         {
           protocol: 'TCP'

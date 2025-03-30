@@ -27,5 +27,4 @@ jobs:
         run: |
           az deployment group create \
             --resource-group $AZURE_RESOURCE_GROUP \
-            --template-file bicep/main.bicep \
-            --parameters location=$AZURE_LOCATION
+            --template-file bicep/main.bicep

@@ -19,12 +19,108 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
               }
             }
           ]
+          networkSecurityGroup: {
+            id: flaskNsg.id
+          }
         }
       }
       {
         name: 'subnet-appgw'
         properties: {
           addressPrefix: '10.0.2.0/24'
+          networkSecurityGroup: {
+            id: appGwNsg.id
+          }
+        }
+      }
+    ]
+  }
+}
+
+// Network Security Group for Flask subnet
+resource flaskNsg 'Microsoft.Network/networkSecurityGroups@2023-09-01' = {
+  name: 'nsg-flask-subnet'
+  location: resourceGroup().location
+  properties: {
+    securityRules: [
+      {
+        name: 'AllowAppGatewayToFlaskApp'
+        properties: {
+          priority: 100
+          direction: 'Inbound'
+          access: 'Allow'
+          protocol: 'Tcp'
+          sourceAddressPrefix: '10.0.2.0/24' // App Gateway subnet
+          sourcePortRange: '*'
+          destinationAddressPrefix: '10.0.1.0/24' // Flask app subnet
+          destinationPortRange: '80'
+          description: 'Allow traffic from App Gateway to Flask app'
+        }
+      }
+      {
+        name: 'DenyAllInbound'
+        properties: {
+          priority: 4096
+          direction: 'Inbound'
+          access: 'Deny'
+          protocol: '*'
+          sourceAddressPrefix: '*'
+          sourcePortRange: '*'
+          destinationAddressPrefix: '*'
+          destinationPortRange: '*'
+          description: 'Deny all other inbound traffic'
+        }
+      }
+    ]
+  }
+}
+
+// Network Security Group for AppGw subnet
+resource appGwNsg 'Microsoft.Network/networkSecurityGroups@2023-09-01' = {
+  name: 'nsg-appgw-subnet'
+  location: resourceGroup().location
+  properties: {
+    securityRules: [
+      {
+        name: 'AllowHttpInbound'
+        properties: {
+          priority: 100
+          direction: 'Inbound'
+          access: 'Allow'
+          protocol: 'Tcp'
+          sourceAddressPrefix: 'Internet'
+          sourcePortRange: '*'
+          destinationAddressPrefix: '*'
+          destinationPortRange: '80'
+          description: 'Allow HTTP inbound traffic'
+        }
+      }
+      {
+        name: 'AllowGatewayManagerInbound'
+        properties: {
+          priority: 110
+          direction: 'Inbound'
+          access: 'Allow'
+          protocol: 'Tcp'
+          sourceAddressPrefix: 'GatewayManager'
+          sourcePortRange: '*'
+          destinationAddressPrefix: '*'
+          destinationPortRange: '65200-65535'
+          description: 'Allow Gateway Manager inbound traffic'
+        }
+      }
+      {
+        name: 'DenyAllInbound'
+        properties: {
+          priority: 4096
+          direction: 'Inbound'
+          access: 'Deny'
+          protocol: '*'
+          sourceAddressPrefix: '*'
+          sourcePortRange: '*'
+          destinationAddressPrefix: '*'
+          destinationPortRange: '*'
+          description: 'Deny all other inbound traffic'
         }
       }
     ]
@@ -40,6 +136,18 @@ resource subnetFlask 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' exis
 resource subnetAppGw 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' existing = {
   parent: vnet
   name: 'subnet-appgw'
+}
+
+// Log Analytics workspace for container logs
+resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
+  name: 'logs-flask-app'
+  location: resourceGroup().location
+  properties: {
+    sku: {
+      name: 'PerGB2018'
+    }
+    retentionInDays: 30
+  }
 }
 
 // Define Container Group (Flask App)
@@ -64,6 +172,7 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
               memoryInGB: 2
             }
           }
+          environmentVariables: []
         }
       }
     ]
@@ -90,6 +199,13 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
         password: 'cWCgp9/jkpJU2pJBky0ZXghkASeU3p7Ra06XgOYhfj+ACRCMuST9'
       }
     ]
+    // Enable logging to Azure Monitor
+    diagnostics: {
+      logAnalytics: {
+        workspaceId: logAnalyticsWorkspace.properties.customerId
+        workspaceKey: logAnalyticsWorkspace.listKeys().primarySharedKey
+      }
+    }
   }
 }
 
@@ -208,5 +324,35 @@ resource appGateway 'Microsoft.Network/applicationGateways@2023-09-01' = {
   ]
 }
 
+// Diagnostic settings for Application Gateway
+resource appGwDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'appgw-diagnostics'
+  scope: appGateway
+  properties: {
+    workspaceId: logAnalyticsWorkspace.id
+    logs: [
+      {
+        category: 'ApplicationGatewayAccessLog'
+        enabled: true
+      }
+      {
+        category: 'ApplicationGatewayPerformanceLog'
+        enabled: true
+      }
+      {
+        category: 'ApplicationGatewayFirewallLog'
+        enabled: true
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+      }
+    ]
+  }
+}
+
 // Output the URL to access the Flask app
 output flaskAppUrl string = 'http://${publicIP.properties.dnsSettings.fqdn}'
+output logAnalyticsPortalUrl string = 'https://portal.azure.com/#@/resource${logAnalyticsWorkspace.id}/overview'

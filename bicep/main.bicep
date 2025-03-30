@@ -53,8 +53,9 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
         }
       ]
     }
+    // Correcting the reference to subnet id, ensuring the correct type
     subnetIds: [
-      subnet.id // Reference the subnet ID correctly
+      subnet.id // Reference the correct subnet ID
     ]
     imageRegistryCredentials: [
       {

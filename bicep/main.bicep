@@ -51,7 +51,7 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
         {
           name: 'flask-app'
           properties: {
-            image: 'acrwlkiu3z7gd3m6.azurecr.io/flask-app:v1'
+            image: 'acrs6amnrp4ma7qw.azurecr.io/flask-app:v1'
             ports: [
               {
                 protocol: 'TCP'
@@ -85,8 +85,8 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
       ]
       imageRegistryCredentials: [
         {
-          server: 'acrwlkiu3z7gd3m6.azurecr.io'
-          username: 'acrwlkiu3z7gd3m6'
+          server: 'acrs6amnrp4ma7qw.azurecr.io'
+          username: 'acrs6amnrp4ma7qw'
           password: 'cWCgp9/jkpJU2pJBky0ZXghkASeU3p7Ra06XgOYhfj+ACRCMuST9'
         }
       ]

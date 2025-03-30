@@ -1,6 +1,6 @@
 // Main Bicep file to deploy the entire infrastructure
 
-// Define Virtual Network and Subnet
+// Define Virtual Network
 resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
   name: 'vnet-flask'
   location: resourceGroup().location
@@ -8,16 +8,18 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
     addressSpace: {
       addressPrefixes: ['10.0.0.0/16']
     }
-    subnets: [
-      {
-        name: 'subnet-flask'
-        properties: {
-          addressPrefix: '10.0.1.0/24'
-        }
-      }
-    ]
   }
 }
+
+// Define Subnet separately
+resource subnet 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' = {
+  name: 'subnet-flask'
+  parent: vnet
+  properties: {
+    addressPrefix: '10.0.1.0/24'
+  }
+}
+
 
 // Define Network Security Group (NSG) to restrict traffic
 resource nsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {

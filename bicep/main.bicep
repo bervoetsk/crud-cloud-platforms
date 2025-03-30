@@ -19,61 +19,17 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
               }
             }
           ]
-          networkSecurityGroup: {
-            id: flaskNsg.id
-          }
         }
       }
       {
         name: 'subnet-appgw'
         properties: {
           addressPrefix: '10.0.2.0/24'
-          // Removed the NSG association with AppGw subnet as it's causing issues
         }
       }
     ]
   }
 }
-
-// Network Security Group for Flask subnet
-resource flaskNsg 'Microsoft.Network/networkSecurityGroups@2023-09-01' = {
-  name: 'nsg-flask-subnet'
-  location: resourceGroup().location
-  properties: {
-    securityRules: [
-      {
-        name: 'AllowAppGatewayToFlaskApp'
-        properties: {
-          priority: 100
-          direction: 'Inbound'
-          access: 'Allow'
-          protocol: 'Tcp'
-          sourceAddressPrefix: '10.0.2.0/24' // App Gateway subnet
-          sourcePortRange: '*'
-          destinationAddressPrefix: '10.0.1.0/24' // Flask app subnet
-          destinationPortRange: '80'
-          description: 'Allow traffic from App Gateway to Flask app'
-        }
-      }
-      {
-        name: 'DenyAllInbound'
-        properties: {
-          priority: 4096
-          direction: 'Inbound'
-          access: 'Deny'
-          protocol: '*'
-          sourceAddressPrefix: '*'
-          sourcePortRange: '*'
-          destinationAddressPrefix: '*'
-          destinationPortRange: '*'
-          description: 'Deny all other inbound traffic'
-        }
-      }
-    ]
-  }
-}
-
-// Network Security Group for AppGw subnet - Removed from subnet association
 
 // Reference to the subnets
 resource subnetFlask 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' existing = {
@@ -86,15 +42,52 @@ resource subnetAppGw 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' exis
   name: 'subnet-appgw'
 }
 
-// Log Analytics workspace for container logs
-resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
-  name: 'logs-flask-app'
+// Define NSG for restricting traffic to flask container
+resource nsgFlask 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
+  name: 'nsg-flask'
   location: resourceGroup().location
   properties: {
-    sku: {
-      name: 'PerGB2018'
+    securityRules: [
+      // Allow inbound traffic on port 80 (HTTP) from the Application Gateway
+      {
+        name: 'AllowAppGwHttp'
+        properties: {
+          direction: 'Inbound'
+          access: 'Allow'
+          protocol: 'Tcp'
+          sourceAddressPrefix: '10.0.2.0/24' // Subnet for Application Gateway
+          destinationPortRange: '80'
+          sourcePortRange: '*'
+          priority: 100
+          action: 'Allow'
+        }
+      },
+      // Deny all other inbound traffic
+      {
+        name: 'DenyAllInbound'
+        properties: {
+          direction: 'Inbound'
+          access: 'Deny'
+          protocol: 'Tcp'
+          sourceAddressPrefix: '*'
+          destinationPortRange: '*'
+          sourcePortRange: '*'
+          priority: 400
+          action: 'Deny'
+        }
+      }
+    ]
+  }
+}
+
+// Apply NSG to flask subnet
+resource subnetFlaskNsgAssociation 'Microsoft.Network/virtualNetworks/subnets/networkSecurityGroupAssociation@2024-05-01' = {
+  parent: subnetFlask
+  name: 'nsgAssociation-flask'
+  properties: {
+    networkSecurityGroup: {
+      id: nsgFlask.id
     }
-    retentionInDays: 30
   }
 }
 
@@ -120,7 +113,6 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
               memoryInGB: 2
             }
           }
-          environmentVariables: []
         }
       }
     ]
@@ -147,14 +139,10 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
         password: 'cWCgp9/jkpJU2pJBky0ZXghkASeU3p7Ra06XgOYhfj+ACRCMuST9'
       }
     ]
-    // Enable logging to Azure Monitor
-    diagnostics: {
-      logAnalytics: {
-        workspaceId: logAnalyticsWorkspace.properties.customerId
-        workspaceKey: logAnalyticsWorkspace.listKeys().primarySharedKey
-      }
-    }
   }
+  dependsOn: [
+    subnetFlaskNsgAssociation
+  ]
 }
 
 // Public IP for Application Gateway
@@ -267,26 +255,20 @@ resource appGateway 'Microsoft.Network/applicationGateways@2023-09-01' = {
       }
     ]
   }
-  // Removed unnecessary dependsOn
+  dependsOn: [
+    containerGroup
+  ]
 }
 
-// Diagnostic settings for Application Gateway
-resource appGwDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
-  name: 'appgw-diagnostics'
-  scope: appGateway
+// Diagnostic settings for sending logs to Azure Monitor
+resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2020-10-01' = {
+  name: 'flask-app-diagnostics'
+  scope: containerGroup
   properties: {
-    workspaceId: logAnalyticsWorkspace.id
+    workspaceId: '/subscriptions/${subscription().id}/resourceGroups/${resourceGroup().name}/providers/Microsoft.OperationalInsights/workspaces/yourLogAnalyticsWorkspace'
     logs: [
       {
-        category: 'ApplicationGatewayAccessLog'
-        enabled: true
-      }
-      {
-        category: 'ApplicationGatewayPerformanceLog'
-        enabled: true
-      }
-      {
-        category: 'ApplicationGatewayFirewallLog'
+        category: 'ContainerInstanceConsole'
         enabled: true
       }
     ]
@@ -301,4 +283,3 @@ resource appGwDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-prev
 
 // Output the URL to access the Flask app
 output flaskAppUrl string = 'http://${publicIP.properties.dnsSettings.fqdn}'
-output logAnalyticsPortalUrl string = 'https://portal.azure.com/#@/resource${logAnalyticsWorkspace.id}/overview'

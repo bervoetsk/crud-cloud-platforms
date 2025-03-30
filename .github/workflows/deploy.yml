@@ -43,7 +43,6 @@ jobs:
       # Stap 4: Implementeer de Bicep-template naar de resourcegroep
       - name: Deploy Bicep template
         run: |
-          # Voer de Bicep deployment uit naar de opgegeven resourcegroep
           az deployment group create \
             --resource-group $AZURE_RESOURCE_GROUP \  # Specificeer de resourcegroep
             --template-file bicep/main.bicep  # Geef het Bicep-bestand aan dat moet worden gedeployed

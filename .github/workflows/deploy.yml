@@ -1,39 +1,49 @@
+# Naam van de workflow die de infrastructuur in Azure implementeert
 name: Deploy Azure Infrastructure
 
+# Wanneer de workflow wordt geactiveerd
 on:
   push:
     branches:
-      - main
-  workflow_dispatch:
+      - main  # De workflow wordt geactiveerd bij een push naar de 'main' branch
+  workflow_dispatch:  # De workflow kan ook handmatig worden geactiveerd
 
+# Omgevingsvariabelen die in de workflow worden gebruikt
 env:
-  AZURE_RESOURCE_GROUP: flask-app-rg
-  AZURE_LOCATION: eastus
+  AZURE_RESOURCE_GROUP: flask-app-rg  # Naam van de resourcegroep in Azure
+  AZURE_LOCATION: eastus  # Locatie (regio) van de resourcegroep in Azure
 
+# De definitie van de 'deploy' job
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # De job draait op een Ubuntu-latest virtuele machine
 
     steps:
+      # Stap 1: De repository uitchecken
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3  # Deze actie haalt de repository op om toegang te krijgen tot de code
 
+      # Stap 2: Inloggen bij Azure
       - name: Log in to Azure
-        uses: azure/login@v1
+        uses: azure/login@v1  # Gebruikt de Azure login actie om in te loggen
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-          
+          creds: ${{ secrets.AZURE_CREDENTIALS }}  # Gebruikt de inloggegevens uit de GitHub Secrets voor authenticatie bij Azure
+
+      # Stap 3: Controleer of de resourcegroep bestaat, en maak deze aan als dat niet het geval is
       - name: Create Resource Group if it doesn't exist
         run: |
+          # Controleer of de opgegeven resourcegroep al bestaat
           if [ $(az group exists --name $AZURE_RESOURCE_GROUP) = false ]; then
-            echo "Creating resource group $AZURE_RESOURCE_GROUP in $AZURE_LOCATION"
-            az group create --name $AZURE_RESOURCE_GROUP --location $AZURE_LOCATION
+            echo "Creating resource group $AZURE_RESOURCE_GROUP in $AZURE_LOCATION"  # Bericht wanneer de groep wordt aangemaakt
+            az group create --name $AZURE_RESOURCE_GROUP --location $AZURE_LOCATION  # Maak de resourcegroep aan in de opgegeven locatie
           else
-            echo "Resource group $AZURE_RESOURCE_GROUP already exists"
+            echo "Resource group $AZURE_RESOURCE_GROUP already exists"  # Bericht als de resourcegroep al bestaat
           fi
 
+      # Stap 4: Implementeer de Bicep-template naar de resourcegroep
       - name: Deploy Bicep template
         run: |
+          # Voer de Bicep deployment uit naar de opgegeven resourcegroep
           az deployment group create \
-            --resource-group $AZURE_RESOURCE_GROUP \
-            --template-file bicep/main.bicep
+            --resource-group $AZURE_RESOURCE_GROUP \  # Specificeer de resourcegroep
+            --template-file bicep/main.bicep  # Geef het Bicep-bestand aan dat moet worden gedeployed

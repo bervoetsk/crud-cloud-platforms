@@ -1,4 +1,4 @@
-// Main Bicep file to deploy the entire infrastructure.
+// Main Bicep file to deploy the entire infrastructure
 
 // Define Virtual Network and Subnet
 resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {

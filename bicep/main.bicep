@@ -19,6 +19,10 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
               }
             }
           ]
+          // Network Security Group association moved here
+          networkSecurityGroup: {
+            id: nsgContainer.id
+          }
         }
       }
       {
@@ -93,27 +97,7 @@ resource nsgContainer 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
   }
 }
 
-// Associate NSG with Container Subnet
-resource subnetNsgAssociation 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' = {
-  parent: vnet
-  name: 'subnet-flask'
-  properties: {
-    addressPrefix: '10.0.1.0/24'
-    delegations: [
-      {
-        name: 'delegation'
-        properties: {
-          serviceName: 'Microsoft.ContainerInstance/containerGroups'
-        }
-      }
-    ]
-    networkSecurityGroup: {
-      id: nsgContainer.id
-    }
-  }
-}
-
-// Reference to the subnets
+// Reference to the subnets (removed duplicate definition)
 resource subnetFlask 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' existing = {
   parent: vnet
   name: 'subnet-flask'
@@ -187,7 +171,7 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
     diagnostics: {
       logAnalytics: {
         workspaceId: logAnalyticsWorkspace.properties.customerId
-        workspaceKey: listKeys(logAnalyticsWorkspace.id, logAnalyticsWorkspace.apiVersion).primarySharedKey
+        workspaceKey: logAnalyticsWorkspace.listKeys().primarySharedKey
         logType: 'ContainerInsights'
       }
     }

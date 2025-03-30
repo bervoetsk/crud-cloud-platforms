@@ -1,3 +1,5 @@
+// Remove the unused location parameter since we're using resourceGroup().location directly
+
 // Define Virtual Network
 resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
   name: 'vnet-flask'
@@ -53,7 +55,6 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
         }
       ]
     }
-    // Fix the subnetIds format to match ContainerGroupSubnetId type
     subnetIds: [
       {
         id: subnet.id
@@ -69,6 +70,3 @@ resource containerGroup 'Microsoft.ContainerInstance/containerGroups@2023-05-01'
     ]
   }
 }
-
-// Define parameters
-param location string = resourceGroup().location

@@ -32,17 +32,16 @@ jobs:
       # Stap 3: Controleer of de resourcegroep bestaat, en maak deze aan als dat niet het geval is
       - name: Create Resource Group if it doesn't exist
         run: |
-          # Controleer of de opgegeven resourcegroep al bestaat
           if [ $(az group exists --name $AZURE_RESOURCE_GROUP) = false ]; then
-            echo "Creating resource group $AZURE_RESOURCE_GROUP in $AZURE_LOCATION"  # Bericht wanneer de groep wordt aangemaakt
-            az group create --name $AZURE_RESOURCE_GROUP --location $AZURE_LOCATION  # Maak de resourcegroep aan in de opgegeven locatie
+            echo "Creating resource group $AZURE_RESOURCE_GROUP in $AZURE_LOCATION"
+            az group create --name $AZURE_RESOURCE_GROUP --location $AZURE_LOCATION
           else
-            echo "Resource group $AZURE_RESOURCE_GROUP already exists"  # Bericht als de resourcegroep al bestaat
+            echo "Resource group $AZURE_RESOURCE_GROUP already exists"
           fi
 
       # Stap 4: Implementeer de Bicep-template naar de resourcegroep
       - name: Deploy Bicep template
         run: |
           az deployment group create \
-            --resource-group $AZURE_RESOURCE_GROUP \  # Specificeer de resourcegroep
-            --template-file bicep/main.bicep  # Geef het Bicep-bestand aan dat moet worden gedeployed
+            --resource-group $AZURE_RESOURCE_GROUP \
+            --template-file bicep/main.bicep

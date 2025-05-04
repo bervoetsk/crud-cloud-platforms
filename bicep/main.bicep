@@ -88,7 +88,7 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
         {
           server: 'acrs6amnrp4ma7qw.azurecr.io'  // Server van de Docker-registry
           username: 'acrs6amnrp4ma7qw'  // Gebruikersnaam voor de registry
-          password: 'UsRXCxFUcuGVUQcWm3pIBMXflsdOSpt3sea6vGvD/F+ACRCm6y2y'  // Wachtwoord voor de registry (zorg ervoor dat deze veilig wordt behandeld)
+          password: 'FP66smGvfkSjjrHuMS6JKbo/hwcR3M1Eedt7LyrfIs+ACRAdS30e'  // Wachtwoord voor de registry (zorg ervoor dat deze veilig wordt behandeld)
         }
       ]
     }
